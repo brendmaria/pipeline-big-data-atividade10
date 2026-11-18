@@ -5,7 +5,7 @@ services:
     image: mariadb:latest
     container_name: brenda_mariadb
     environment:
-      MYSQL_ROOT_PASSWORD: secretpassword
+      MYSQL_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
       MYSQL_DATABASE: agridata
     ports:
       - "3306:3306"

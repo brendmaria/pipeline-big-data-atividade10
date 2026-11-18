@@ -9,7 +9,7 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_USER = os.getenv("DB_USER", "root")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "secretpassword")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME", "agridata")
 
 contador_duplicatas = 0
