@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:latest
+    container_name: brenda_mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: secretpassword
+      MYSQL_DATABASE: agridata
+    ports:
+      - "3306:3306"
+    networks:
+      - rede-pipeline
+
+  mongodb:
+    image: mongo:latest
+    container_name: brenda_mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - rede-pipeline
+
+  redis:
+    image: redis:alpine
+    container_name: brenda_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - rede-pipeline
+
+  pipeline:
+    build: .
+    container_name: brenda_pipeline
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    depends_on:
+      - mariadb
+      - mongodb
+      - redis
+    environment:
+      - MYSQL_HOST=mariadb
+      - MONGO_HOST=mongodb
+      - REDIS_HOST=redis
+    networks:
+      - rede-pipeline
+
+networks:
+  rede-pipeline:
+    driver: bridge
