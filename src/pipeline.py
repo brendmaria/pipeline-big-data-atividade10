@@ -61,47 +61,43 @@ def executar_pipeline():
 
     global contador_duplicatas, contador_relogio_invalido, contador_quarentena
 
+    ultimo_lido = None
+
     while True:
         try:
-            pacote_exemplo = {
-                "origem": "no_01",
-                "id_pacote": 1001,
-                "timestamp": datetime.now(),
-                "payload": {"bateria": 4.1, "canal": 12}
-            }
-            
-            origem = pacote_exemplo["origem"]
-            id_pac = pacote_exemplo["id_pacote"]
-            
-            chave_duplicata = (origem, id_pac)
-            if chave_duplicata in processados:
-                contador_duplicatas += 1
-                continue
-            processados.add(chave_duplicata)
+            filtro = {} if ultimo_lido is None else {"_id": {"$gt": ultimo_lido}}
+            for pacote in db_mongo["pacotes_brutos"].find(filtro).sort("_id", 1):
+                ultimo_lido = pacote["_id"]
 
-            ts = pacote_exemplo["timestamp"]
-            if ts.year < 2024:
-                contador_relogio_invalido += 1
-                ts = datetime.now()
+                if "payload" not in pacote or "origem" not in pacote:
+                    contador_quarentena += 1
+                    continue
 
-            if "payload" not in pacote_exemplo:
-                contador_quarentena += 1
-                continue
+                origem = pacote["origem"]
+                chave = (origem, pacote.get("id_pacote"))
+                if chave in processados:
+                    contador_duplicatas += 1
+                    continue
+                processados.add(chave)
 
-            for metrica, valor in pacote_exemplo["payload"].items():
-                cursor.execute(
-                    "INSERT INTO brenda_serie_limpa (no_origem, instante, metrica, valor) VALUES (%s, %s, %s, %s)",
-                    (origem, ts, metrica, valor)
-                )
-                db_sql.commit()
-                r_client.set(f"brenda:{origem}:{metrica}", valor)
+                ts = pacote.get("timestamp")
+                if ts is None or ts.year < 2024:
+                    contador_relogio_invalido += 1
+                    ts = datetime.now()
 
-            print(f"[LOG] Processado. Duplicatas: {contador_duplicatas} | Relógio Inválido: {contador_relogio_invalido} | Quarentena: {contador_quarentena}")
+                for metrica, valor in pacote["payload"].items():
+                    cursor.execute(
+                        "INSERT INTO brenda_serie_limpa (no_origem, instante, metrica, valor) VALUES (%s, %s, %s, %s)",
+                        (origem, ts, metrica, valor),
+                    )
+                    db_sql.commit()
+                    r_client.set(f"brenda:{origem}:{metrica}", valor)
 
+            print(f"[LOG] Duplicatas: {contador_duplicatas} | Relógio inválido: {contador_relogio_invalido} | Quarentena: {contador_quarentena}", flush=True)
         except Exception as e:
-            print(f"Erro no ciclo do pipeline: {e}")
+            print(f"Erro no ciclo do pipeline: {e}", flush=True)
 
         time.sleep(10)
 
 if __name__ == "__main__":
-    executar_pipeline()
+        executar_pipeline()

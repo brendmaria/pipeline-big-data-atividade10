@@ -2,9 +2,9 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Copia os ficheiros do projeto
+# Copia os ficheiros de dependências e instala-os
 COPY requirements.txt .
-COPY . .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia diretamente os pacotes do Python local (site-packages) do teu Linux para dentro do Docker!
-COPY /home/usuario/.local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+# Copia o resto do código do projeto
+COPY . .
